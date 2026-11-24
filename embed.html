@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Smart Guitar Video Player</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+    iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var rawId = (params.get('v') || '').trim();
+      if (!/^[A-Za-z0-9_-]{11}$/.test(rawId)) return;
+
+      var origin = window.location.origin;
+      var query = [
+        'playsinline=1',
+        'rel=0',
+        'modestbranding=1',
+        'enablejsapi=1',
+        'origin=' + encodeURIComponent(origin),
+        'widget_referrer=' + encodeURIComponent(window.location.href)
+      ];
+      var si = params.get('si');
+      if (si && /^[A-Za-z0-9_-]+$/.test(si)) {
+        query.push('si=' + encodeURIComponent(si));
+      }
+
+      var iframe = document.createElement('iframe');
+      iframe.id = 'yt-embed-frame';
+      iframe.src = 'https://www.youtube.com/embed/' + rawId + '?' + query.join('&');
+      iframe.title = 'YouTube video player';
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen');
+      iframe.setAttribute('allowfullscreen', '');
+      document.body.appendChild(iframe);
+
+      // Forward pause/stop commands from Smart Guitar host app to YouTube player
+      window.addEventListener('message', function (event) {
+        try {
+          if (!iframe.contentWindow || !event.data) return;
+          var msg = typeof event.data === 'string' ? event.data : JSON.stringify(event.data);
+          if (msg.indexOf('pauseVideo') !== -1 || msg.indexOf('stopVideo') !== -1) {
+            iframe.contentWindow.postMessage(msg, '*');
+          }
+        } catch (e) {}
+      });
+    })();
+  </script>
+</body>
+</html>
